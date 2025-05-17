@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Snake Game</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+        }
+
+        canvas {
+            background: #000;
+            display: block;
+            margin: 30px auto;
+            border: 2px solid #444;
+        }
+
+        body {
+            text-align: center;
+            font-family: sans-serif;
+            background-color: #111;
+            color: #fff;
+        }
+
+        h1 {
+            margin-top: 20px;
+        }
+
+        p {
+            margin: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Snake Game</h1>
+    <p>Use Arrow Keys to Move | Press <strong>Spacebar</strong> to Pause/Resume</p>
+    <canvas id="game" width="400" height="400"></canvas>
+    <p id="scoreboard">Score: 0 | High Score: 0</p>
+
+    <script>
+        const canvas = document.getElementById("game");
+        const ctx = canvas.getContext("2d");
+        const box = 20;
+        const rows = canvas.height / box;
+        const cols = canvas.width / box;
+
+        let snake = [{ x: 9 * box, y: 9 * box }];
+        let food = {
+            x: Math.floor(Math.random() * cols) * box,
+            y: Math.floor(Math.random() * rows) * box,
+        };
+
+        let dx = box;
+        let dy = 0;
+        let score = 0;
+        let highScore = localStorage.getItem("highScore") || 0;
+        let paused = false;
+        let gameInterval;
+
+        document.addEventListener("keydown", handleKeyPress);
+
+        function handleKeyPress(event) {
+            if (event.key === "ArrowLeft" && dx === 0) {
+                dx = -box; dy = 0;
+            } else if (event.key === "ArrowUp" && dy === 0) {
+                dx = 0; dy = -box;
+            } else if (event.key === "ArrowRight" && dx === 0) {
+                dx = box; dy = 0;
+            } else if (event.key === "ArrowDown" && dy === 0) {
+                dx = 0; dy = box;
+            } else if (event.key === " " || event.code === "Space") {
+                paused = !paused;
+            }
+        }
+
+        function draw() {
+            if (paused) {
+                ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = "yellow";
+                ctx.font = "24px Arial";
+                ctx.fillText("Paused", canvas.width / 2 - 40, canvas.height / 2);
+                return;
+            }
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw snake
+            snake.forEach((segment, index) => {
+                ctx.fillStyle = index === 0 ? "lime" : "green";
+                ctx.fillRect(segment.x, segment.y, box, box);
+            });
+
+            // Draw food
+            ctx.fillStyle = "red";
+            ctx.fillRect(food.x, food.y, box, box);
+
+            // Move snake
+            const head = { x: snake[0].x + dx, y: snake[0].y + dy };
+
+            // Collision
+            if (
+                head.x < 0 || head.x >= cols * box ||
+                head.y < 0 || head.y >= rows * box ||
+                snake.some(segment => segment.x === head.x && segment.y === head.y)
+            ) {
+                clearInterval(gameInterval);
+                if (score > highScore) {
+                    highScore = score;
+                    localStorage.setItem("highScore", highScore);
+                }
+                alert("Game Over! Score: " + score);
+                location.reload();
+                return;
+            }
+
+            snake.unshift(head);
+
+            // Eat food
+            if (head.x === food.x && head.y === food.y) {
+                score++;
+                food = {
+                    x: Math.floor(Math.random() * cols) * box,
+                    y: Math.floor(Math.random() * rows) * box,
+                };
+            } else {
+                snake.pop();
+            }
+
+            // Update score
+            document.getElementById("scoreboard").textContent =
+                `Score: ${score} | High Score: ${highScore}`;
+        }
+
+        gameInterval = setInterval(draw, 150); // slower: 150ms per tick
+    </script>
+</body>
+
+</html>
